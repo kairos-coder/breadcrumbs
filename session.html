@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Breadcrumbs · Council Feed</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #1a1208;
+      color: #f5e6c8;
+      font-family: 'Georgia', serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(232, 201, 106, 0.2);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: normal;
+    }
+
+    h1 span {
+      color: #e8c96a;
+    }
+
+    .handle-badge {
+      font-family: monospace;
+      background: rgba(232, 201, 106, 0.1);
+      padding: 0.3rem 0.8rem;
+      border-radius: 48px;
+      font-size: 0.8rem;
+    }
+
+    .session-info {
+      background: rgba(0,0,0,0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      color: #8a7a5a;
+      margin-bottom: 1rem;
+    }
+
+    .feed {
+      background: rgba(0,0,0,0.3);
+      border-radius: 16px;
+      padding: 1rem;
+      min-height: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-play {
+      padding: 0.75rem;
+      border-bottom: 1px solid rgba(232, 201, 106, 0.1);
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+
+    .card-play .handle {
+      color: #e8c96a;
+      font-weight: bold;
+    }
+
+    .card-play .card {
+      color: #7ab87a;
+    }
+
+    .card-play .message {
+      color: #a08c6a;
+      font-style: italic;
+    }
+
+    .card-play .timestamp {
+      color: #5a4a2a;
+      font-size: 0.7rem;
+      margin-left: 1rem;
+    }
+
+    .empty-feed {
+      text-align: center;
+      padding: 3rem;
+      color: #5a4a2a;
+      font-style: italic;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: rgba(232, 201, 106, 0.1);
+      border: 1px solid rgba(232, 201, 106, 0.3);
+      color: #e8c96a;
+      padding: 0.5rem 1.5rem;
+      border-radius: 48px;
+      font-family: monospace;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: rgba(232, 201, 106, 0.2);
+      transform: scale(1.02);
+    }
+
+    button.primary {
+      background: #e8c96a;
+      color: #1a1208;
+      font-weight: bold;
+    }
+
+    button.primary:hover {
+      background: #f0d87a;
+    }
+
+    .broadcast-area {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .broadcast-area input {
+      flex: 1;
+      background: rgba(10,8,5,0.8);
+      border: 1px solid rgba(232, 201, 106, 0.3);
+      border-radius: 48px;
+      padding: 0.6rem 1rem;
+      color: #f5e6c8;
+      font-family: monospace;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .broadcast-area input:focus {
+      border-color: #e8c96a;
+    }
+
+    .status {
+      font-size: 0.7rem;
+      color: #7ab87a;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    .token-warning {
+      background: rgba(139,58,15,0.2);
+      border: 1px solid #8b3a0f;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
+    a {
+      color: #e8c96a;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Breadcrumbs · <span>Council Feed</span></h1>
+    <div class="handle-badge" id="handleBadge">@loading</div>
+  </div>
+
+  <div class="session-info">
+    🍞 Session ID: <span id="sessionId"></span> · Ephemeral feed · Clears when you close
+  </div>
+
+  <div id="tokenWarning" class="token-warning" style="display: none;">
+    ⚠️ No GitHub token configured. You can observe, but to broadcast, 
+    <a href="#" id="configureTokenLink">configure your GitHub Personal Access Token</a> (stored locally).
+  </div>
+
+  <div class="feed" id="feed">
+    <div class="empty-feed">Loading the council feed...</div>
+  </div>
+
+  <div class="action-bar">
+    <button id="observeBtn">👁️ OBSERVE</button>
+    <button id="refreshBtn">⟳ Refresh</button>
+  </div>
+
+  <div class="broadcast-area">
+    <input type="text" id="broadcastMsg" placeholder="Your broadcast message... (optional)">
+    <button id="broadcastBtn" class="primary">📢 BROADCAST</button>
+  </div>
+
+  <div id="status" class="status"></div>
+</div>
+
+<script>
+  // ========== CONFIGURATION ==========
+  const GITHUB_OWNER = 'kairos-coder';
+  const GITHUB_REPO = 'breadcrumbs-feed';
+  const ISSUES_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`;
+
+  // Session ephemeral storage
+  const SESSION_ID = 'session_' + Date.now();
+  document.getElementById('sessionId').innerText = SESSION_ID.slice(-8);
+
+  // Stored keys
+  const HANDLE_KEY = 'breadcrumbs_handle';
+  const TRAIL_KEY = 'breadcrumbs_trail';
+  const GITHUB_TOKEN_KEY = 'breadcrumbs_github_token';
+
+  // ========== HELPERS ==========
+  function getHandle() {
+    return localStorage.getItem(HANDLE_KEY);
+  }
+
+  function getStoredTrail() {
+    const stored = localStorage.getItem(TRAIL_KEY);
+    return stored ? JSON.parse(stored) : { cards: [], unlocked: ['DECLARE'] };
+  }
+
+  function saveTrail(trail) {
+    localStorage.setItem(TRAIL_KEY, JSON.stringify(trail));
+  }
+
+  function addCardToTrail(cardName, metadata = {}) {
+    const trail = getStoredTrail();
+    trail.cards.push({
+      card: cardName,
+      timestamp: Date.now(),
+      ...metadata
+    });
+    saveTrail(trail);
+    return trail;
+  }
+
+  function getGitHubToken() {
+    return localStorage.getItem(GITHUB_TOKEN_KEY);
+  }
+
+  // ========== GITHUB ISSUES (Feed) ==========
+  async function fetchFeed(limit = 50) {
+    try {
+      const url = `${ISSUES_API}?state=all&per_page=${limit}&sort=created&direction=desc`;
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+      const issues = await response.json();
+      return issues.filter(issue => !issue.pull_request); // exclude PRs
+    } catch (err) {
+      console.error('Failed to fetch feed:', err);
+      return [];
+    }
+  }
+
+  async function postCardPlay(cardName, message = '') {
+    const token = getGitHubToken();
+    if (!token) {
+      throw new Error('No GitHub token configured');
+    }
+
+    const handle = getHandle();
+    if (!handle) throw new Error('No handle found');
+
+    const title = `${handle} played ${cardName}`;
+    const body = `**Handle:** ${handle}\n**Card:** ${cardName}\n**Session:** ${SESSION_ID}\n**Message:** ${message}\n**Timestamp:** ${new Date().toISOString()}`;
+
+    const response = await fetch(ISSUES_API, {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title, body })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to post');
+    }
+
+    return await response.json();
+  }
+
+  // ========== RENDER FEED ==========
+  async function renderFeed() {
+    const feedDiv = document.getElementById('feed');
+    feedDiv.innerHTML = '<div class="empty-feed">Loading council feed...</div>';
+
+    const issues = await fetchFeed(50);
+    
+    if (issues.length === 0) {
+      feedDiv.innerHTML = '<div class="empty-feed">No cards played yet. Be the first to BROADCAST or OBSERVE.</div>';
+      return;
+    }
+
+    feedDiv.innerHTML = issues.map(issue => {
+      // Parse the issue body to extract details
+      const body = issue.body || '';
+      const handleMatch = body.match(/\*\*Handle:\*\* (.*)/);
+      const cardMatch = body.match(/\*\*Card:\*\* (.*)/);
+      const messageMatch = body.match(/\*\*Message:\*\* (.*)/);
+      
+      const handle = handleMatch ? handleMatch[1] : 'unknown';
+      const card = cardMatch ? cardMatch[1] : 'UNKNOWN';
+      const message = messageMatch && messageMatch[1] ? messageMatch[1] : '';
+      
+      const date = new Date(issue.created_at);
+      const timeStr = date.toLocaleTimeString();
+      
+      return `
+        <div class="card-play">
+          <span class="handle">${escapeHtml(handle)}</span> 
+          played <span class="card">${escapeHtml(card)}</span>
+          ${message ? `<span class="message">"${escapeHtml(message)}"</span>` : ''}
+          <span class="timestamp">${timeStr}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  // ========== CARD ACTIONS ==========
+  async function playObserve() {
+    const handle = getHandle();
+    if (!handle) {
+      alert('No handle found. Return to index.html to declare.');
+      return;
+    }
+
+    // Add to personal trail
+    addCardToTrail('OBSERVE', { session: SESSION_ID });
+    
+    // Unlock READ after OBSERVE
+    const trail = getStoredTrail();
+    if (!trail.unlocked.includes('READ')) {
+      trail.unlocked.push('READ');
+      saveTrail(trail);
+    }
+
+    // Post to GitHub feed (if token exists)
+    const token = getGitHubToken();
+    if (token) {
+      try {
+        await postCardPlay('OBSERVE', '');
+        showStatus('✓ OBSERVE recorded. Feed updated.');
+        await renderFeed();
+      } catch (err) {
+        showStatus(`⚠️ OBSERVE saved locally but not posted: ${err.message}`, 'error');
+      }
+    } else {
+      showStatus('✓ OBSERVE saved to your trail. Configure GitHub token to share with the council.', 'warning');
+    }
+  }
+
+  async function playBroadcast() {
+    const msg = document.getElementById('broadcastMsg').value.trim();
+    if (!msg) {
+      alert('Write a message to BROADCAST');
+      return;
+    }
+
+    const handle = getHandle();
+    if (!handle) {
+      alert('No handle found. Return to index.html to declare.');
+      return;
+    }
+
+    // Add to personal trail
+    addCardToTrail('BROADCAST', { session: SESSION_ID, message: msg });
+
+    // Post to GitHub feed
+    const token = getGitHubToken();
+    if (!token) {
+      alert('GitHub token required to BROADCAST. Configure it below.');
+      return;
+    }
+
+    try {
+      await postCardPlay('BROADCAST', msg);
+      showStatus('✓ BROADCAST sent to council feed.');
+      document.getElementById('broadcastMsg').value = '';
+      await renderFeed();
+    } catch (err) {
+      showStatus(`❌ Failed to broadcast: ${err.message}`, 'error');
+    }
+  }
+
+  function showStatus(msg, type = 'info') {
+    const statusDiv = document.getElementById('status');
+    statusDiv.innerText = msg;
+    setTimeout(() => {
+      if (document.getElementById('status').innerText === msg) {
+        statusDiv.innerText = '';
+      }
+    }, 3000);
+  }
+
+  // ========== TOKEN CONFIGURATION ==========
+  function configureToken() {
+    const token = prompt('Enter your GitHub Personal Access Token (repo scope required):\n\nIt will be stored in localStorage and never sent anywhere except GitHub API.');
+    if (token && token.trim()) {
+      localStorage.setItem(GITHUB_TOKEN_KEY, token.trim());
+      document.getElementById('tokenWarning').style.display = 'none';
+      showStatus('✓ GitHub token configured. You can now BROADCAST.');
+    }
+  }
+
+  function checkToken() {
+    const token = getGitHubToken();
+    if (!token) {
+      document.getElementById('tokenWarning').style.display = 'block';
+    } else {
+      document.getElementById('tokenWarning').style.display = 'none';
+    }
+  }
+
+  // ========== INIT ==========
+  window.addEventListener('DOMContentLoaded', async () => {
+    const handle = getHandle();
+    if (!handle) {
+      alert('No handle found. Redirecting to index.html to declare your identity.');
+      window.location.href = 'index.html';
+      return;
+    }
+
+    document.getElementById('handleBadge').innerText = handle;
+    checkToken();
+
+    // Load feed
+    await renderFeed();
+
+    // Set up event listeners
+    document.getElementById('observeBtn').addEventListener('click', playObserve);
+    document.getElementById('broadcastBtn').addEventListener('click', playBroadcast);
+    document.getElementById('refreshBtn').addEventListener('click', renderFeed);
+    document.getElementById('configureTokenLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      configureToken();
+    });
+  });
+</script>
+
+</body>
+</html>
