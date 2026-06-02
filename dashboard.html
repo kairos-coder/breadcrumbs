@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Breadcrumbs · Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: radial-gradient(ellipse at 20% 30%, #0a1a2a, #020408);
+      color: #f0e6c8;
+      font-family: 'Georgia', serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Crumb River Canvas */
+    #crumbCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    .hero {
+      text-align: center;
+      padding: 4rem 2rem 2rem;
+      border-bottom: 1px solid rgba(232, 201, 106, 0.2);
+      margin-bottom: 3rem;
+    }
+
+    h1 {
+      font-size: 4rem;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #f5e6c8, #e8c96a);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .tagline {
+      font-style: italic;
+      color: #8a7a5a;
+      font-size: 1.1rem;
+    }
+
+    .live-badge {
+      display: inline-block;
+      background: rgba(232, 201, 106, 0.1);
+      border: 1px solid #e8c96a;
+      border-radius: 48px;
+      padding: 0.3rem 1rem;
+      font-size: 0.7rem;
+      font-family: monospace;
+      margin-top: 1rem;
+    }
+
+    .live-badge .pulse {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #7ab87a;
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    /* Two-column layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: rgba(10, 8, 5, 0.6);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(232, 201, 106, 0.15);
+      border-radius: 24px;
+      padding: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.3rem;
+      color: #e8c96a;
+      margin-bottom: 1rem;
+      border-left: 3px solid #e8c96a;
+      padding-left: 0.8rem;
+    }
+
+    /* Feed */
+    .feed-item {
+      padding: 0.8rem 0;
+      border-bottom: 1px solid rgba(232, 201, 106, 0.1);
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+
+    .feed-item .handle {
+      color: #e8c96a;
+    }
+
+    .feed-item .card {
+      color: #7ab87a;
+      display: inline;
+      padding: 0;
+      background: none;
+      border: none;
+    }
+
+    .timestamp {
+      color: #5a4a2a;
+      font-size: 0.7rem;
+    }
+
+    .empty-feed {
+      color: #5a4a2a;
+      text-align: center;
+      padding: 2rem;
+      font-style: italic;
+    }
+
+    /* Starter deck */
+    .deck {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .deck-card {
+      background: rgba(232, 201, 106, 0.05);
+      border: 1px solid rgba(232, 201, 106, 0.2);
+      border-radius: 12px;
+      padding: 0.8rem 0.5rem;
+      text-align: center;
+      font-family: monospace;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    .deck-card.name {
+      background: rgba(122, 184, 122, 0.1);
+      border-color: #7ab87a;
+      color: #7ab87a;
+      font-weight: bold;
+    }
+
+    /* Manifesto */
+    .manifesto {
+      background: rgba(232, 201, 106, 0.03);
+      border-left: 3px solid #e8c96a;
+      padding: 1rem 1.5rem;
+      margin-top: 2rem;
+      border-radius: 0 16px 16px 0;
+    }
+
+    .manifesto p {
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      border-top: 1px solid rgba(232, 201, 106, 0.1);
+      margin-top: 2rem;
+      font-size: 0.7rem;
+      color: #5a4a2a;
+    }
+
+    a {
+      color: #e8c96a;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="crumbCanvas"></canvas>
+
+<div class="content">
+  <div class="hero">
+    <h1>BREADCRUMBS</h1>
+    <div class="tagline">The initiation chamber for the Ealdforn Republic</div>
+    <div class="live-badge">
+      <span class="pulse"></span> Council Feed · Live Session
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Left: Recent Feed -->
+    <div class="card">
+      <h2>📡 Council Feed</h2>
+      <div id="feedContainer">
+        <div class="empty-feed">Loading the ledger...</div>
+      </div>
+    </div>
+
+    <!-- Right: Starter Deck -->
+    <div class="card">
+      <h2>🎴 The Starter Deck</h2>
+      <div class="deck">
+        <div class="deck-card">PLAN</div>
+        <div class="deck-card">HUNT</div>
+        <div class="deck-card">COPY</div>
+        <div class="deck-card">CREATE</div>
+        <div class="deck-card">TEST</div>
+        <div class="deck-card">BROADCAST</div>
+        <div class="deck-card">HELP</div>
+        <div class="deck-card name">NAME</div>
+      </div>
+      <div class="manifesto">
+        <p><strong>Reddit + GitHub, but neither.</strong></p>
+        <p>Your temple. Your trail. Your named cards.</p>
+        <p>Play the starter deck. NAME your first creation. Join the Court.</p>
+        <p style="margin-top: 0.5rem; font-size:0.8rem;">→ <a href="index.html">Declare your handle</a> · <a href="session.html">Enter the council feed</a></p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Breadcrumbs · Coherence Court · Ealdforn Republic<br>
+    Append only · The fire holds · Your move
+  </footer>
+</div>
+
+<script>
+  // Crumb River Animation (Pontus-style)
+  const canvas = document.getElementById('crumbCanvas');
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+
+  function resizeCanvas() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  // Crumbs as particles
+  const crumbs = [];
+  const CRUMB_COUNT = 80;
+
+  for (let i = 0; i < CRUMB_COUNT; i++) {
+    crumbs.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      size: Math.random() * 4 + 2,
+      speedX: (Math.random() - 0.5) * 0.5,
+      speedY: (Math.random() - 0.5) * 0.3 + 0.2, // drift downward
+      opacity: Math.random() * 0.5 + 0.2,
+      color: `hsl(${45 + Math.random() * 20}, 70%, ${60 + Math.random() * 20}%)`
+    });
+  }
+
+  function drawCrumbRiver() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // Deep sea gradient (Pontus vibe)
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#021a2a');
+    grad.addColorStop(1, '#010408');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Draw flowing "current" lines
+    ctx.beginPath();
+    for (let i = 0; i < 20; i++) {
+      const y = height * (0.2 + i * 0.04);
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(width * 0.3, y + Math.sin(Date.now() * 0.001 + i) * 10, width * 0.7, y - Math.sin(Date.now() * 0.001 + i) * 8, width, y);
+      ctx.strokeStyle = `rgba(232, 201, 106, ${0.05 + Math.sin(Date.now() * 0.002 + i) * 0.03})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    
+    // Draw crumbs
+    for (let c of crumbs) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+      ctx.fillStyle = c.color;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#e8c96a';
+      ctx.fill();
+      
+      // Update position
+      c.x += c.speedX;
+      c.y += c.speedY;
+      
+      // Wrap around
+      if (c.x < -50) c.x = width + 50;
+      if (c.x > width + 50) c.x = -50;
+      if (c.y < -50) c.y = height + 50;
+      if (c.y > height + 50) c.y = -50;
+    }
+    ctx.shadowBlur = 0;
+    requestAnimationFrame(drawCrumbRiver);
+  }
+  drawCrumbRiver();
+
+  // Fetch recent feed from GitHub Issues
+  async function fetchRecentFeed() {
+    const feedContainer = document.getElementById('feedContainer');
+    feedContainer.innerHTML = '<div class="empty-feed">Loading the ledger...</div>';
+    
+    try {
+      const response = await fetch('https://api.github.com/repos/kairos-coder/breadcrumbs-feed/issues?state=all&per_page=5&sort=created&direction=desc');
+      if (!response.ok) throw new Error('Failed to fetch');
+      const issues = await response.json();
+      
+      if (issues.length === 0) {
+        feedContainer.innerHTML = '<div class="empty-feed">No cards played yet. Be the first to BROADCAST.</div>';
+        return;
+      }
+      
+      const feedHtml = issues.map(issue => {
+        const body = issue.body || '';
+        const handleMatch = body.match(/\*\*Handle:\*\* (.*)/);
+        const cardMatch = body.match(/\*\*Card:\*\* (.*)/);
+        const handle = handleMatch ? handleMatch[1] : 'unknown';
+        const card = cardMatch ? cardMatch[1] : 'UNKNOWN';
+        const date = new Date(issue.created_at);
+        const timeStr = date.toLocaleTimeString();
+        
+        return `
+          <div class="feed-item">
+            <span class="handle">${escapeHtml(handle)}</span> played 
+            <span class="card">${escapeHtml(card)}</span>
+            <span class="timestamp">${timeStr}</span>
+          </div>
+        `;
+      }).join('');
+      
+      feedContainer.innerHTML = feedHtml;
+    } catch (err) {
+      console.error(err);
+      feedContainer.innerHTML = '<div class="empty-feed">Unable to load feed. Repo may not exist yet.</div>';
+    }
+  }
+  
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+  
+  fetchRecentFeed();
+  setInterval(fetchRecentFeed, 30000); // refresh every 30 seconds
+</script>
+
+</body>
+</html>
